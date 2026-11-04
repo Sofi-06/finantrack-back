@@ -50,6 +50,12 @@ export class TransactionsController {
   })
   @ApiQuery({ name: 'accountId', required: false, type: String })
   @ApiQuery({ name: 'categoryId', required: false, type: String })
+  @ApiQuery({ name: 'personId', required: false, type: String })
+  @ApiQuery({
+    name: 'purpose',
+    required: false,
+    enum: ['NORMAL', 'DEBT', 'REPAYMENT'],
+  })
   @ApiQuery({
     name: 'type',
     required: false,

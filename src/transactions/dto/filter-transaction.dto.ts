@@ -1,6 +1,9 @@
 import { IsDateString, IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TransactionType } from '../entities/transaction.entity';
+import {
+  TransactionPurpose,
+  TransactionType,
+} from '../entities/transaction.entity';
 
 export class FilterTransactionDto {
   @ApiPropertyOptional({ description: 'Filter by account ID' })
@@ -17,6 +20,16 @@ export class FilterTransactionDto {
   @IsOptional()
   @IsEnum(TransactionType)
   type?: TransactionType;
+
+  @ApiPropertyOptional({ description: 'Filter by person ID' })
+  @IsOptional()
+  @IsUUID()
+  personId?: string;
+
+  @ApiPropertyOptional({ enum: TransactionPurpose })
+  @IsOptional()
+  @IsEnum(TransactionPurpose)
+  purpose?: TransactionPurpose;
 
   @ApiPropertyOptional({
     description: 'Start date filter (YYYY-MM-DD)',

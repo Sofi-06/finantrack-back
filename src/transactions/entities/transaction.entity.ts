@@ -10,11 +10,18 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Account } from '../../accounts/entities/account.entity';
 import { Category } from '../../categories/entities/category.entity';
+import { Person } from '../../persons/entities/person.entity';
 
 export enum TransactionType {
   INCOME = 'INCOME',
   EXPENSE = 'EXPENSE',
   TRANSFER = 'TRANSFER',
+}
+
+export enum TransactionPurpose {
+  NORMAL = 'NORMAL',
+  DEBT = 'DEBT',
+  REPAYMENT = 'REPAYMENT',
 }
 
 @Entity('transactions')
@@ -46,6 +53,16 @@ export class Transaction {
   @Column({ length: 150, nullable: true })
   person: string;
 
+  @Column({ name: 'person_id', nullable: true })
+  personId: string;
+
+  @Column({
+    type: 'enum',
+    enum: TransactionPurpose,
+    default: TransactionPurpose.NORMAL,
+  })
+  purpose: TransactionPurpose;
+
   @Column({ type: 'text', nullable: true })
   description: string;
 
@@ -71,4 +88,11 @@ export class Transaction {
   })
   @JoinColumn({ name: 'category_id' })
   category: Category;
+
+  @ManyToOne(() => Person, (person) => person.transactions, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'person_id' })
+  personRecord: Person;
 }

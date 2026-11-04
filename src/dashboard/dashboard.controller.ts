@@ -27,7 +27,7 @@ export class DashboardController {
 - netMonthly: income minus expenses this month
 - accountBalances: balance breakdown per account
 - expensesByCategory: expenses grouped by category for this month
-- receivables: income transactions grouped by person (money to collect)`,
+- receivables: debt minus repayments grouped by person`,
   })
   @ApiResponse({ status: 200, description: 'Dashboard data returned' })
   getDashboard(@CurrentUser() user: AuthUser) {

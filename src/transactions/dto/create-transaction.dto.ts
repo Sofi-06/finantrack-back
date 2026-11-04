@@ -10,7 +10,10 @@ import {
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TransactionType } from '../entities/transaction.entity';
+import {
+  TransactionPurpose,
+  TransactionType,
+} from '../entities/transaction.entity';
 
 export class CreateTransactionDto {
   @ApiProperty({ example: 'a1b2c3d4-...' })
@@ -41,11 +44,18 @@ export class CreateTransactionDto {
   @IsDateString()
   date: string;
 
-  @ApiPropertyOptional({ example: 'John Smith' })
+  @ApiPropertyOptional({ example: 'a1b2c3d4-...' })
   @IsOptional()
-  @IsString()
-  @MaxLength(150)
-  person?: string;
+  @IsUUID()
+  personId?: string;
+
+  @ApiPropertyOptional({
+    enum: TransactionPurpose,
+    default: TransactionPurpose.NORMAL,
+  })
+  @IsOptional()
+  @IsEnum(TransactionPurpose)
+  purpose?: TransactionPurpose;
 
   @ApiPropertyOptional({ example: 'Monthly salary' })
   @IsOptional()

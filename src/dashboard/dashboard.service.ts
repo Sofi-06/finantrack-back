@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   Transaction,
+  TransactionPurpose,
   TransactionType,
 } from '../transactions/entities/transaction.entity';
 import { Account } from '../accounts/entities/account.entity';
+import { Person } from '../persons/entities/person.entity';
 
 @Injectable()
 export class DashboardService {
@@ -14,6 +16,8 @@ export class DashboardService {
     private readonly transactionRepository: Repository<Transaction>,
     @InjectRepository(Account)
     private readonly accountRepository: Repository<Account>,
+    @InjectRepository(Person)
+    private readonly personRepository: Repository<Person>,
   ) {}
 
   async getDashboard(userId: string) {
@@ -134,23 +138,31 @@ export class DashboardService {
   }
 
   private async getReceivables(userId: string) {
-    const rows = await this.transactionRepository
-      .createQueryBuilder('tx')
-      .select('tx.person', 'person')
-      .addSelect('SUM(tx.amount)', 'totalAmount')
-      .addSelect('COUNT(tx.id)', 'count')
-      .where('tx.userId = :userId', { userId })
-      .andWhere("tx.type = 'INCOME'")
-      .andWhere('tx.person IS NOT NULL')
-      .andWhere("tx.person != ''")
-      .groupBy('tx.person')
-      .orderBy('totalAmount', 'DESC')
-      .getRawMany();
+    const persons = await this.personRepository.find({
+      where: { userId },
+      relations: { transactions: true },
+    });
 
-    return rows.map((r) => ({
-      person: r.person,
-      totalAmount: +Number(r.totalAmount).toFixed(2),
-      transactionCount: Number(r.count),
-    }));
+    return persons
+      .map((person) => {
+        const debtTransactions = person.transactions.filter(
+          (tx) =>
+            tx.purpose === TransactionPurpose.DEBT ||
+            tx.purpose === TransactionPurpose.REPAYMENT,
+        );
+        const balance = debtTransactions.reduce((total, tx) => {
+          const amount = Number(tx.amount);
+          return tx.purpose === TransactionPurpose.DEBT
+            ? total + amount
+            : total - amount;
+        }, 0);
+        return {
+          personId: person.id,
+          person: person.name,
+          totalAmount: +balance.toFixed(2),
+          transactionCount: debtTransactions.length,
+        };
+      })
+      .sort((a, b) => b.totalAmount - a.totalAmount);
   }
 }
