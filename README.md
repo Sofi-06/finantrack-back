@@ -1,269 +1,242 @@
 # FinanTrack API
 
-> Backend REST API para gestión de finanzas personales — construido con **NestJS**, **TypeORM** y **PostgreSQL (Supabase)**.
+Backend REST de FinanTrack para administrar cuentas, categorías, personas y movimientos financieros. La API está construida con NestJS, usa PostgreSQL mediante TypeORM y protege los recursos privados con JWT.
 
-## Stack Tecnológico
+## Funcionalidades
 
-| Tecnología | Uso |
-|---|---|
-| NestJS + TypeScript | Framework principal |
-| PostgreSQL (Supabase) | Base de datos |
-| TypeORM | ORM + migraciones |
-| JWT + bcrypt | Autenticación |
-| class-validator | Validaciones |
-| Swagger | Documentación |
+- Registro e inicio de sesión.
+- Autenticación mediante Bearer Token (JWT).
+- Gestión de cuentas y cálculo dinámico de saldos.
+- Gestión de categorías de ingresos y gastos.
+- Gestión de personas asociadas a deudas y pagos.
+- Registro y filtrado de transacciones.
+- Resumen financiero mensual para el dashboard.
+- Validación global de las solicitudes.
+- Documentación interactiva con Swagger.
 
-## Requisitos Previos
+## Tecnologías
 
-- Node.js >= 18
-- npm >= 9
-- Cuenta en [Supabase](https://supabase.com) (gratuita)
+- Node.js y TypeScript
+- NestJS 11
+- PostgreSQL
+- TypeORM
+- Passport y JWT
+- Argon2 para contraseñas
+- class-validator y class-transformer
+- Swagger / OpenAPI
+- Jest
 
----
+## Requisitos
 
-## 1. Configurar Supabase
+- Node.js 20 o superior
+- npm
+- Una instancia de PostgreSQL local o remota
 
-1. Ve a [https://app.supabase.com](https://app.supabase.com) y crea un nuevo proyecto.
-2. Cuando el proyecto esté listo, ve a **Project Settings → Database**.
-3. Copia los siguientes datos:
-   - **Host**: `db.<tu-ref>.supabase.co`
-   - **Port**: `5432`
-   - **Database name**: `postgres`
-   - **User**: `postgres`
-   - **Password**: la contraseña que elegiste al crear el proyecto
+## Instalación
 
----
-
-## 2. Instalación
+Desde la carpeta del backend:
 
 ```bash
-# Clonar o navegar al directorio del proyecto
 cd finantrack
-
-# Instalar dependencias
 npm install
 ```
 
----
+## Variables de entorno
 
-## 3. Variables de Entorno
+Crea el archivo `.env` a partir de `.env.example`:
 
-Copia el archivo de ejemplo y complétalo con tus credenciales de Supabase:
+```powershell
+Copy-Item .env.example .env
+```
+
+En macOS o Linux:
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env`:
+Configura los siguientes valores:
 
 ```env
-# Application
 PORT=3000
-NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
 
-# Database (Supabase PostgreSQL)
-DB_HOST=db.xxxxxxxxxxxxxxxxxxxx.supabase.co
+DB_HOST=localhost
 DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=tu_contraseña_supabase
-DB_NAME=postgres
-DB_SSL=true
+DB_USER=postgres
+DB_PASSWORD=tu_contrasena
+DB_NAME=finantrack
+DB_SSL=false
+DB_SYNCHRONIZE=true
 
-# JWT
-JWT_SECRET=una_clave_secreta_muy_larga_y_aleatoria
+JWT_SECRET=una_clave_larga_y_segura
 JWT_EXPIRATION=7d
 ```
 
-> **⚠️ Importante:** Nunca subas tu `.env` al control de versiones. Ya está incluido en `.gitignore`.
+| Variable | Descripción | Valor habitual |
+|---|---|---|
+| `PORT` | Puerto de la API | `3000` |
+| `FRONTEND_URL` | Origen permitido por CORS | `http://localhost:5173` |
+| `DB_HOST` | Servidor de PostgreSQL | `localhost` |
+| `DB_PORT` | Puerto de PostgreSQL | `5432` |
+| `DB_USER` | Usuario de la base de datos | `postgres` |
+| `DB_PASSWORD` | Contraseña de la base de datos | — |
+| `DB_NAME` | Nombre de la base de datos | `finantrack` |
+| `DB_SSL` | Habilita SSL para la conexión | `false` local, normalmente `true` en servicios administrados |
+| `DB_SYNCHRONIZE` | Sincroniza el esquema automáticamente | `true` solo durante desarrollo |
+| `JWT_SECRET` | Clave usada para firmar los tokens | Debe ser secreta y robusta |
+| `JWT_EXPIRATION` | Duración del token | `7d` |
 
----
+> No publiques el archivo `.env`. Para producción usa migraciones y establece `DB_SYNCHRONIZE=false`, ya que la sincronización automática puede alterar el esquema.
 
-## 4. Migraciones / Sincronización de Base de Datos
-
-El proyecto usa **TypeORM con `synchronize: true` en desarrollo**, lo que significa que las tablas se crean automáticamente al levantar la app por primera vez.
-
-### En desarrollo (recomendado para inicio rápido)
-
-Con `NODE_ENV=development`, la sincronización automática está activada. Al correr la aplicación por primera vez, TypeORM creará las siguientes tablas en tu base de datos Supabase:
-
-- `users`
-- `accounts`
-- `categories`
-- `transactions`
-
-### En producción (migraciones manuales)
-
-Para producción, desactiva `synchronize` y usa migraciones:
+## Ejecución
 
 ```bash
-# Generar una migración
-npx typeorm migration:generate src/migrations/InitialMigration -d src/data-source.ts
-
-# Ejecutar migraciones
-npx typeorm migration:run -d src/data-source.ts
-```
-
-> **Nota:** En producción, establece `NODE_ENV=production` en tu `.env`. El `synchronize` se desactivará automáticamente.
-
----
-
-## 5. Levantar el Proyecto
-
-```bash
-# Modo desarrollo (con hot-reload)
+# Desarrollo con recarga automática
 npm run start:dev
 
-# Modo producción
+# Ejecución normal
+npm run start
+
+# Compilar y ejecutar la versión de producción
 npm run build
 npm run start:prod
 ```
 
-La API estará disponible en: `http://localhost:3000`
+La API queda disponible en `http://localhost:3000`. La documentación Swagger se encuentra en `http://localhost:3000/api/docs`.
 
----
+## Autenticación
 
-## 6. Documentación Swagger
+Los endpoints de registro e inicio de sesión son públicos. Los demás requieren el token recibido en la propiedad `access_token`:
 
-Una vez levantada la aplicación, accede a la documentación interactiva:
-
-```
-http://localhost:3000/api/docs
+```http
+Authorization: Bearer <access_token>
 ```
 
-Desde Swagger puedes:
-- Registrarte e iniciar sesión
-- Obtener el JWT token
-- Probar todos los endpoints autenticados
+Ejemplo de registro:
 
----
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Ana Pérez","email":"ana@example.com","password":"clave-segura-123"}'
+```
+
+Ejemplo de inicio de sesión:
+
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ana@example.com","password":"clave-segura-123"}'
+```
 
 ## Endpoints
 
-### Auth
-| Método | Endpoint | Descripción |
-|---|---|---|
-| POST | `/auth/register` | Registrar nuevo usuario |
-| POST | `/auth/login` | Iniciar sesión, obtener JWT |
+### Autenticación
 
-### Accounts
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/accounts` | Listar cuentas del usuario |
-| POST | `/accounts` | Crear cuenta |
-| GET | `/accounts/:id` | Obtener cuenta |
-| GET | `/accounts/:id/balance` | Obtener saldo calculado |
-| PUT | `/accounts/:id` | Actualizar cuenta |
-| DELETE | `/accounts/:id` | Eliminar cuenta |
+| Método | Ruta | Descripción | Acceso |
+|---|---|---|---|
+| `POST` | `/auth/register` | Registra un usuario y devuelve un token | Público |
+| `POST` | `/auth/login` | Inicia sesión y devuelve un token | Público |
 
-### Categories
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/categories` | Listar categorías |
-| POST | `/categories` | Crear categoría |
-| GET | `/categories/:id` | Obtener categoría |
-| PUT | `/categories/:id` | Actualizar categoría |
-| DELETE | `/categories/:id` | Eliminar categoría |
+### Cuentas
 
-### Transactions
-| Método | Endpoint | Descripción |
+| Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/transactions` | Listar transacciones (con filtros) |
-| POST | `/transactions` | Crear transacción |
-| GET | `/transactions/:id` | Obtener transacción |
-| PUT | `/transactions/:id` | Actualizar transacción |
-| DELETE | `/transactions/:id` | Eliminar transacción |
+| `POST` | `/accounts` | Crea una cuenta |
+| `GET` | `/accounts` | Lista las cuentas del usuario |
+| `GET` | `/accounts/:id` | Consulta una cuenta |
+| `GET` | `/accounts/:id/balance` | Obtiene el saldo calculado |
+| `PUT` | `/accounts/:id` | Actualiza una cuenta |
+| `DELETE` | `/accounts/:id` | Elimina una cuenta |
 
-**Filtros disponibles para GET `/transactions`:**
-- `accountId` — Filtrar por cuenta
-- `categoryId` — Filtrar por categoría
-- `type` — `INCOME` | `EXPENSE` | `TRANSFER`
-- `startDate` — Fecha inicio (`YYYY-MM-DD`)
-- `endDate` — Fecha fin (`YYYY-MM-DD`)
+Tipos de cuenta: `BANK`, `DIGITAL_WALLET`, `CASH` y `CREDIT_CARD`.
+
+### Categorías
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/categories` | Crea una categoría |
+| `GET` | `/categories` | Lista las categorías del usuario |
+| `GET` | `/categories/:id` | Consulta una categoría |
+| `PUT` | `/categories/:id` | Actualiza una categoría |
+| `DELETE` | `/categories/:id` | Elimina una categoría |
+
+Tipos de categoría: `INCOME` y `EXPENSE`.
+
+### Personas
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/persons` | Crea una persona |
+| `GET` | `/persons` | Lista las personas del usuario |
+| `GET` | `/persons/:id` | Consulta una persona |
+| `PUT` | `/persons/:id` | Actualiza una persona |
+| `DELETE` | `/persons/:id` | Elimina una persona |
+
+### Transacciones
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/transactions` | Registra una transacción |
+| `GET` | `/transactions` | Lista y filtra transacciones |
+| `GET` | `/transactions/:id` | Consulta una transacción |
+| `PUT` | `/transactions/:id` | Actualiza una transacción |
+| `DELETE` | `/transactions/:id` | Elimina una transacción |
+
+Filtros disponibles en `GET /transactions`:
+
+| Parámetro | Descripción |
+|---|---|
+| `accountId` | UUID de la cuenta |
+| `categoryId` | UUID de la categoría |
+| `personId` | UUID de la persona |
+| `type` | `INCOME`, `EXPENSE` o `TRANSFER` |
+| `purpose` | `NORMAL`, `DEBT` o `REPAYMENT` |
+| `startDate` | Fecha inicial en formato ISO |
+| `endDate` | Fecha final en formato ISO |
+
+Las operaciones con propósito `DEBT` deben ser gastos y las operaciones `REPAYMENT` deben ser ingresos. Ambas requieren una persona asociada.
 
 ### Dashboard
-| Método | Endpoint | Descripción |
+
+| Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/dashboard` | Resumen financiero del mes actual |
+| `GET` | `/dashboard` | Devuelve balance total, ingresos, gastos, balance neto, saldos por cuenta, gastos por categoría y cuentas por cobrar del mes actual |
 
-**Respuesta del dashboard:**
-```json
-{
-  "totalBalance": 5200.00,
-  "monthlyIncome": 3000.00,
-  "monthlyExpenses": 1200.00,
-  "netMonthly": 1800.00,
-  "accountBalances": [
-    { "accountId": "...", "name": "BBVA", "type": "BANK", "balance": 4200.00 }
-  ],
-  "expensesByCategory": [
-    { "categoryId": "...", "categoryName": "Alimentación", "icon": "🛒", "total": 650.00 }
-  ],
-  "receivables": [
-    { "person": "Carlos", "totalAmount": 500.00, "transactionCount": 2 }
-  ],
-  "period": { "startDate": "2024-01-01", "endDate": "2024-01-31" }
-}
+## Cálculo de saldos
+
+El saldo de una cuenta no se almacena como un campo independiente. Se calcula con el saldo inicial y sus movimientos:
+
+```text
+saldo = saldo inicial + ingresos - gastos
 ```
 
----
+Actualmente las transacciones de tipo `TRANSFER` no modifican este cálculo.
 
-## Estructura del Proyecto
+## Estructura principal
 
-```
+```text
 src/
-├── auth/
-│   ├── decorators/       # @CurrentUser()
-│   ├── dto/              # RegisterDto, LoginDto
-│   ├── guards/           # JwtAuthGuard
-│   ├── strategies/       # JwtStrategy
-│   ├── auth.controller.ts
-│   ├── auth.module.ts
-│   └── auth.service.ts
-├── users/
-│   ├── entities/         # User entity
-│   ├── users.module.ts
-│   └── users.service.ts
-├── accounts/
-│   ├── dto/              # CreateAccountDto, UpdateAccountDto
-│   ├── entities/         # Account entity
-│   ├── accounts.controller.ts
-│   ├── accounts.module.ts
-│   └── accounts.service.ts
-├── categories/
-│   ├── dto/              # CreateCategoryDto, UpdateCategoryDto
-│   ├── entities/         # Category entity
-│   ├── categories.controller.ts
-│   ├── categories.module.ts
-│   └── categories.service.ts
-├── transactions/
-│   ├── dto/              # CreateTransactionDto, UpdateTransactionDto, FilterTransactionDto
-│   ├── entities/         # Transaction entity
-│   ├── transactions.controller.ts
-│   ├── transactions.module.ts
-│   └── transactions.service.ts
-├── dashboard/
-│   ├── dashboard.controller.ts
-│   ├── dashboard.module.ts
-│   └── dashboard.service.ts
+├── accounts/       # Cuentas y cálculo de saldos
+├── auth/           # Registro, login, JWT y guards
+├── categories/     # Categorías de ingresos y gastos
+├── dashboard/      # Resumen financiero mensual
+├── persons/        # Personas relacionadas con deudas y pagos
+├── transactions/   # Movimientos y filtros
+├── users/          # Usuarios
 ├── app.module.ts
 └── main.ts
 ```
 
----
+## Calidad y pruebas
 
-## Lógica de Saldos
+```bash
+npm run lint
+npm run format
+npm test
+npm run test:watch
+npm run test:cov
+npm run test:e2e
+```
 
-> Los saldos de cuentas **nunca se guardan en la base de datos**. Se calculan dinámicamente:
->
-> `saldo = initialBalance + Σ(ingresos) - Σ(gastos)`
->
-> Esto garantiza que los saldos siempre sean consistentes con las transacciones registradas.
-
----
-
-## Seguridad
-
-- Las contraseñas se hashean con **bcrypt** (12 salt rounds).
-- Todos los endpoints (excepto `/auth/register` y `/auth/login`) requieren JWT válido.
-- Cada usuario solo puede acceder a sus propios datos (validación de `userId` en todas las queries).
-- Las variables de entorno sensibles nunca se exponen en el código.
+`npm run lint` y `npm run format` modifican archivos para aplicar correcciones y formato.
